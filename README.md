@@ -2,4 +2,4 @@
 
 Elixir Concurrency Examples:
 
-* [MergeSort](sort/README.md)
+* [MergeSort](sort)
