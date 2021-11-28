@@ -1,2 +1,5 @@
 # elixir-concurrency-examples
-Elixir Concurrency Examples
+
+Elixir Concurrency Examples:
+
+* [MergeSort](sort/README.md)
