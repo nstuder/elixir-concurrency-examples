@@ -11,15 +11,11 @@ defmodule ScrapeSite do
     {:reply, state, state}
   end
 
-  defp wasUrlsScraped({scrapedUrls, _, _}, url) do
-    MapSet.member?(scrapedUrls, url)
-  end
-
   @impl true
   def handle_cast({:url, url}, {scrapedUrls, allUrls, baseUrl}) do
     currentUrl = baseUrl <> url
 
-    if wasUrlsScraped({scrapedUrls, allUrls, baseUrl}, currentUrl) do
+    if Map.has_key?(scrapedUrls, currentUrl) do
       {:noreply, {scrapedUrls, allUrls, baseUrl}}
     else
       # parse request
@@ -32,12 +28,21 @@ defmodule ScrapeSite do
         Floki.attribute(document, "a", "href")
         |> filterUrls()
 
-      scrapedUrls = MapSet.put(scrapedUrls, currentUrl)
+      scrapedUrls = Map.put(scrapedUrls, currentUrl, document)
       # convert into unique Values
       allUrls = MapSet.union(allUrls, MapSet.new(links))
 
       {:noreply, {scrapedUrls, allUrls, baseUrl}}
     end
+  end
+
+  @impl true
+  def handle_call({:search, searchTerm}, _from, {scrapedUrls, allUrls, baseUrl}) do
+    value =
+      scrapedUrls
+      |> Enum.map(fn {_, value} -> Floki.find(value, searchTerm) end)
+
+    {:reply, value, {scrapedUrls, allUrls, baseUrl}}
   end
 
   defp filterUrls(urls) do
