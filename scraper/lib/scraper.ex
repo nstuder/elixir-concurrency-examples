@@ -2,13 +2,13 @@ defmodule Scraper do
   def main(url) do
     HTTPoison.start()
 
-    {:ok, pid} = GenServer.start_link(ScrapeSite, {%{}, MapSet.new(), url})
-    GenServer.cast(pid, {:url, "/"})
+    pid = ScrapeSite.start_link(url)
+    ScrapeSite.cast_url(pid, "/")
 
-    {_, allUrls, _} = GenServer.call(pid, :get)
+    {_, allUrls, _} = ScrapeSite.get_state(pid)
 
-    Enum.map(allUrls, fn s -> GenServer.cast(pid, {:url, s}) end)
+    Enum.map(allUrls, fn s -> ScrapeSite.cast_url(pid, s) end)
 
-    GenServer.call(pid, {:search, "h1"})
+    ScrapeSite.search(pid, "h1")
   end
 end

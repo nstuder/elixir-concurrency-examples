@@ -1,6 +1,23 @@
 defmodule ScrapeSite do
   use GenServer
 
+  def start_link(baseUrl) do
+    {:ok, pid} = GenServer.start_link(ScrapeSite, {%{}, MapSet.new(), baseUrl})
+    pid
+  end
+
+  def search(pid, searchTerm) do
+    GenServer.call(pid, {:search, searchTerm})
+  end
+
+  def get_state(pid) do
+    GenServer.call(pid, :get)
+  end
+
+  def cast_url(pid, url) do
+    GenServer.cast(pid, {:url, url})
+  end
+
   @impl true
   def init(state) do
     {:ok, state}
@@ -9,6 +26,16 @@ defmodule ScrapeSite do
   @impl true
   def handle_call(:get, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call({:search, searchTerm}, _from, {scrapedUrls, allUrls, baseUrl}) do
+    value =
+      scrapedUrls
+      |> Enum.map(fn {_, value} -> Floki.find(value, searchTerm) end)
+      |> Enum.filter(fn value -> value != [] end)
+
+    {:reply, value, {scrapedUrls, allUrls, baseUrl}}
   end
 
   @impl true
@@ -34,15 +61,6 @@ defmodule ScrapeSite do
 
       {:noreply, {scrapedUrls, allUrls, baseUrl}}
     end
-  end
-
-  @impl true
-  def handle_call({:search, searchTerm}, _from, {scrapedUrls, allUrls, baseUrl}) do
-    value =
-      scrapedUrls
-      |> Enum.map(fn {_, value} -> Floki.find(value, searchTerm) end)
-
-    {:reply, value, {scrapedUrls, allUrls, baseUrl}}
   end
 
   defp filterUrls(urls) do
