@@ -14,6 +14,10 @@ defmodule ScrapeSite do
     GenServer.call(pid, :get)
   end
 
+  def get_links(pid) do
+    GenServer.call(pid, :links)
+  end
+
   def cast_url(pid, url) do
     GenServer.cast(pid, {:url, url})
   end
@@ -26,6 +30,12 @@ defmodule ScrapeSite do
   @impl true
   def handle_call(:get, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call(:link, _from, state) do
+    {_, allUrls, _} = state
+    {:reply, allUrls, state}
   end
 
   @impl true
