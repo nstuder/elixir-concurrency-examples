@@ -7,7 +7,7 @@ defmodule BasicSupervisor do
       }
     ]
 
-    {:ok, pid} = Supervisor.start_link(children, strategy: :one_for_one)
+    {:ok, _pid} = Supervisor.start_link(children, strategy: :one_for_one)
   end
 
   def devide(num, to) when num == to, do: :ok
