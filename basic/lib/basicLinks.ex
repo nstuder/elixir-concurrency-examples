@@ -10,14 +10,14 @@ defmodule BasicLinks do
     # pid = spawn_link(BasicLinks, :loop, [])
 
     # send Messages to Process
-    send(pid, {:destroy, "bad Request"})
+    send(pid, {:destroy, "Bad Request"})
 
     receive do
       {:EXIT, _from_pid, reason} -> IO.puts("Exit reason(Link): #{reason}")
       {:DOWN, _ref, :process, _from_pid, reason} -> IO.puts("Exit reason(Monitor): #{reason}")
     end
 
-    # should only be executed if spawn monitor
+    # should only be executed if spawn_monitor
     IO.puts("after Process died")
   end
 
