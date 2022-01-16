@@ -1,8 +1,10 @@
 defmodule ScrapeSite do
   use GenServer
 
-  def start_link(baseUrl) do
-    {:ok, pid} = GenServer.start_link(ScrapeSite, {%{}, MapSet.new(), baseUrl})
+  # public API
+
+  def start_link() do
+    {:ok, pid} = GenServer.start_link(ScrapeSite, {%{}, MapSet.new()})
     pid
   end
 
@@ -22,8 +24,11 @@ defmodule ScrapeSite do
     GenServer.cast(pid, {:url, url})
   end
 
+  # GenServer handler Methodes
+
   @impl true
   def init(state) do
+    HTTPoison.start()
     {:ok, state}
   end
 
@@ -33,43 +38,42 @@ defmodule ScrapeSite do
   end
 
   @impl true
-  def handle_call(:link, _from, state) do
-    {_, allUrls, _} = state
+  def handle_call(:links, _from, state) do
+    {_, allUrls} = state
     {:reply, allUrls, state}
   end
 
   @impl true
-  def handle_call({:search, searchTerm}, _from, {scrapedUrls, allUrls, baseUrl}) do
+  def handle_call({:search, searchTerm}, _from, {scrapedUrls, allUrls}) do
     value =
       scrapedUrls
       |> Enum.map(fn {_, value} -> Floki.find(value, searchTerm) end)
       |> Enum.filter(fn value -> value != [] end)
 
-    {:reply, value, {scrapedUrls, allUrls, baseUrl}}
+    {:reply, value, {scrapedUrls, allUrls}}
   end
 
   @impl true
-  def handle_cast({:url, url}, {scrapedUrls, allUrls, baseUrl}) do
-    currentUrl = baseUrl <> url
-
-    if Map.has_key?(scrapedUrls, currentUrl) do
-      {:noreply, {scrapedUrls, allUrls, baseUrl}}
+  def handle_cast({:url, url}, {scrapedUrls, allUrls}) do
+    if Map.has_key?(scrapedUrls, url) do
+      {:noreply, {scrapedUrls, allUrls}}
     else
       # parse request
-      IO.puts(currentUrl)
-      %{body: body} = HTTPoison.get!(currentUrl)
+      IO.puts(url)
+      %{body: body} = HTTPoison.get!(url)
       {:ok, document} = Floki.parse_document(body)
 
       # filter Data
       links =
         Floki.attribute(document, "a", "href")
         |> filterUrls()
+        |> Enum.map(fn path -> url <> path end)
 
-      scrapedUrls = Map.put(scrapedUrls, currentUrl, document)
+      scrapedUrls = Map.put(scrapedUrls, url, document)
       # convert into unique Values
       allUrls = MapSet.union(allUrls, MapSet.new(links))
 
-      {:noreply, {scrapedUrls, allUrls, baseUrl}}
+      {:noreply, {scrapedUrls, allUrls}}
     end
   end
 
