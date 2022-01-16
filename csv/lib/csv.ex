@@ -1,14 +1,18 @@
 defmodule Csv do
   def main do
+    # start Agent
     {:ok, lineAgent} = Agent.start_link(fn -> [] end)
 
+    # create Line Stream from csv File and spawn Process with map_to_list Function
     line_pids =
       File.stream!("./lib/test.csv")
       |> Stream.map(fn line -> spawn(Csv, :map_to_list, [line, self()]) end)
       |> Enum.to_list()
 
+    # receive from spawned Processes and put result in lineAgent
     receive_from_process(lineAgent, length(line_pids))
 
+    # print State of lineAgent
     Agent.get(lineAgent, fn state -> IO.puts(inspect(state)) end)
   end
 
